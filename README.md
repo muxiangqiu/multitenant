@@ -6,7 +6,7 @@
 
 Multitenant采用的是**独立数据库共享或独享数据库实例**，简单来说就是，一个租户对应着一个数据库，这个数据库可以独享整个数据库实例，也可以与其他租户共享数据库实例，数据库实例可以有一个或者多个，根据项目的规模来定，后期可以动态横向扩展数据库实例，不需要开发人员再次开发。
 ## 可维护性
-一个公司一个数据库，一百个公司就一百个数据库，这种情况下，项目后期运营过程中，项目添加了一个新的功能，这个新功能需要在每个公司对应的数据库中新建一张表，是不是需要运维人员把建表脚本在每个公司的数据库中都执行一遍呢？在bdf3中是不需要的，bdf3会在合适的时机，根据开发人员定义的实体类自动生成表。又或者我需要添加一个新的表字段，同样也是可以自动生成的。又或者我需要修改某个字段的长度，这种情况，虽然没法自动帮你修改，但是bdf3提供了初始化脚本，你可以把修改字段长度的脚本写好，Multitenant就会在合适的时机来执行你的脚本。
+一个公司一个数据库，一百个公司就一百个数据库，这种情况下，项目后期运营过程中，项目添加了一个新的功能，这个新功能需要在每个公司对应的数据库中新建一张表，是不是需要运维人员把建表脚本在每个公司的数据库中都执行一遍呢？在Multitenant中是不需要的，Multitenant会在合适的时机，根据开发人员定义的实体类自动生成表。又或者我需要添加一个新的表字段，同样也是可以自动生成的。又或者我需要修改某个字段的长度，这种情况，虽然没法自动帮你修改，但是Multitenant提供了初始化脚本，你可以把修改字段长度的脚本写好，Multitenant就会在合适的时机来执行你的脚本。
 ## 注意事项
 1. 如果数据库类型为非嵌入式数据库，一定要加spring.datasource.platform属性，如：spring.datasource.platform=mysql
 2. 如果数据库类型为非嵌入式数据库且不是mysql，请在classpath*路径下面添加对应数据库创库脚本，如：database-oracle.sql。mysql已经提供
@@ -32,7 +32,7 @@ packagesToScan=com......a.domain,com......b.domain.......
 ## 执行数据库初始化SQL脚本工序
 默认脚本存放位置为：classpath*:multitenant.sql;classpath*:multitenant-xxx.sql。其中xxx为spring.datasource.platform的值。可以通过resourceScript指定别的位置。
 ## 公司数据源智能切换
-每个公司对应着一个数据源DataSource，或者说EntityManagerFactory，如何让不同公司的用户操作的是自己公司的数据源。SAAS模块提供了两个接口DataSourceService和EntityManagerFactoryService，都有相应方法：通过公司ID获取数据源或者EntityManagerFactory。有了这两个接口，实现业务的功能还是很麻烦，SAAS模块扩展了bdf3-jpa和bdf3-dorado-jpa，让JpaUtil工具类，根据登录的公司，自动切换数据源，开发人员就不用关系多数据源的切换问题了。基于JpaUtil工具类还有一个好处，比如，刚开始项目不是SAAS项目，开发了一大半后想做成SAAS项目，这样就可以无缝切换，不需要改一行代码。从SAAS项目切换到普通项目也是一样。
+每个公司对应着一个数据源DataSource，或者说EntityManagerFactory，如何让不同公司的用户操作的是自己公司的数据源。SAAS模块提供了两个接口DataSourceService和EntityManagerFactoryService，都有相应方法：通过公司ID获取数据源或者EntityManagerFactory。有了这两个接口，实现业务的功能还是很麻烦，根据登录的公司，自动切换数据源，开发人员就不用关系多数据源的切换问题了。基于JpaUtil工具类还有一个好处，比如，刚开始项目不是SAAS项目，开发了一大半后想做成SAAS项目，这样就可以无缝切换，不需要改一行代码。从SAAS项目切换到普通项目也是一样。
 ## multitenant模式下的事务管理
 事务管理器为MultitenantJpaTransactionManager，提供在多租户模式下的事务管理，这个并非JTA事务管理器，一定要明白这一点，至于为什么不用JTA事务管理器，我的理由是JTA性能不好，大部分操作都是在对某一个数据源的操作，封装JTA没有必要，增加框架的复杂度和使用难度。对于少部分需要JTA事务的情况，可以用代码的方式实现接近JTA事务的效果，网上有很多这样的例子可以参考，如果一定要JTA事务管理器的话，可以参考MultitenantJpaTransactionManager自行扩展。
 ### 原理
