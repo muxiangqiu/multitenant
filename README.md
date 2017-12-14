@@ -41,7 +41,7 @@ multitenant是如何管理事务的，其实原理很简单：
 2. 事务管理根据事务注解，构建事务状态，然后构建事务同步对象注册到事务同步管理器中
 
 ## A公司用户操作B公司的数据源
-在绝大多数业务开发中，是不需要操作别的公司数据源的，操作主公司的数据源相对会比较多，但也不会太多。假如有这样的需求该怎么办呢？SAAS模块提供了一个工具类SaasUtils。
+在绝大多数业务开发中，是不需要操作别的公司数据源的，操作主公司的数据源相对会比较多，但也不会太多。假如有这样的需求该怎么办呢？multitenant提供了一个工具类MultitenantUtils。
 ### 操作其他公司数据源
 ```java
 //查询类方法
@@ -69,8 +69,8 @@ MultitenantUtils.doQuery(() -> {
 ```
 ## Multitenant的SQL脚本
 1. data.sql 用于主公司的初始化，配置属性：spring.dataSource.data，classpath*:data.sql;classpath*:data-xxx.sql。其中xxx为spring.datasource.platform的值。
-2. saas.sql 用于公司（不包含主公司）创建时的初始化，配置属性：bdf3.saas.resourceScript，classpath*:multitenant.sql;classpath*:multitenant-xxx.sql。其中xxx为spring.datasource.platform的值。
-3. multitenant-data.sql 用于公司（不包含主公司）对应的EntityManagerFactory创建时的初始化，配置属性：bdf3.saas.dataScript，classpath*:multitenant-data.sql;classpath*:multitenant-data-xxx.sql。其中xxx为spring.datasource.platform的值。
+2. multitenant.sql 用于公司（不包含主公司）创建时的初始化，配置属性：resourceScript，classpath*:multitenant.sql;classpath*:multitenant-xxx.sql。其中xxx为spring.datasource.platform的值。
+3. multitenant-data.sql 用于公司（不包含主公司）对应的EntityManagerFactory创建时的初始化，配置属性：dataScript，classpath*:multitenant-data.sql;classpath*:multitenant-data-xxx.sql。其中xxx为spring.datasource.platform的值。
 ## 公司的EntityManagerFactory（DataSource）创建的时机
 * 主公司的EntityManagerFactory只在项目启动的时候创建
 * 其他公司EntityManagerFactory（DataSource）创建情况

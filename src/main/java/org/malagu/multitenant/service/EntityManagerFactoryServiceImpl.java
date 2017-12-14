@@ -172,7 +172,7 @@ public class EntityManagerFactoryServiceImpl implements
 		entityManagerFactoryBean.setResourceLoader(resourceLoader);
 		entityManagerFactoryBean.setPersistenceUnitName(organization.getId());
 		entityManagerFactoryBean.afterPropertiesSet();
-		scriptService.runScripts(organization.getId(), dataSource, dataScript, "utils-data");
+		scriptService.runScripts(organization.getId(), dataSource, dataScript, "multitenant-data");
 		return entityManagerFactoryBean.getObject();
 	}
 	
