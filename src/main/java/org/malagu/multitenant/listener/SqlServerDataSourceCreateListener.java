@@ -6,7 +6,7 @@ import org.malagu.multitenant.domain.DataSourceInfo;
 import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.service.DatabaseNameService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,7 @@ public class SqlServerDataSourceCreateListener implements DataSourceCreateListen
 	
 	@Override
 	public void onCreate(Organization organization, DataSourceInfo dataSourceInfo,
-						 DataSourceBuilder dataSourceBuilder) {
+						 DataSourceBuilder<?> dataSourceBuilder) {
 
 		if ("com.microsoft.sqlserver.jdbc.SQLServerDriver".equals(dataSourceInfo.getDriverClassName())) {
 			String url = dataSourceInfo.getUrl();

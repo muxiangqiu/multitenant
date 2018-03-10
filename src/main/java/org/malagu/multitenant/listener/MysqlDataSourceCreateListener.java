@@ -5,7 +5,7 @@ import org.malagu.multitenant.domain.DataSourceInfo;
 import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.service.DatabaseNameService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class MysqlDataSourceCreateListener implements DataSourceCreateListener {
 	
 	@Override
 	public void onCreate(Organization organization, DataSourceInfo dataSourceInfo,
-						 DataSourceBuilder dataSourceBuilder) {
+						 DataSourceBuilder<?> dataSourceBuilder) {
 		if ("com.mysql.jdbc.Driver".equals(dataSourceInfo.getDriverClassName())) {
 			String url = dataSourceInfo.getUrl();
 			if (!url.contains(databaseNameService.getDatabaseName(Constants.MASTER))) {

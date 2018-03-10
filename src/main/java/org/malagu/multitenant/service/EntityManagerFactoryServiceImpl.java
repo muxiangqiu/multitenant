@@ -10,6 +10,8 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.malagu.multitenant.Constants;
 import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.listener.EntityManagerFactoryCreateListener;
@@ -22,6 +24,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateSettings;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder.Builder;
@@ -76,6 +80,15 @@ public class EntityManagerFactoryServiceImpl implements
 	private ClassLoader classLoader;
 
 	private String beanName;
+	
+	@Autowired
+	private PhysicalNamingStrategy physicalNamingStrategy;
+
+	@Autowired
+	private ImplicitNamingStrategy implicitNamingStrategy;
+
+	@Autowired
+	private List<HibernatePropertiesCustomizer> hibernatePropertiesCustomizers;
 	
 	@Autowired(required = false)
 	private List<EntityManagerFactoryCreateListener> listeners;
@@ -178,7 +191,11 @@ public class EntityManagerFactoryServiceImpl implements
 	
 	protected Map<String, Object> getVendorProperties(DataSource dataSource) {
 		Map<String, Object> vendorProperties = new LinkedHashMap<String, Object>();
-		vendorProperties.putAll(this.properties.getHibernateProperties(dataSource));
+		vendorProperties.putAll(this.properties.getHibernateProperties(new HibernateSettings()
+				.implicitNamingStrategy(this.implicitNamingStrategy)
+				.physicalNamingStrategy(this.physicalNamingStrategy)
+				.hibernatePropertiesCustomizers(
+						this.hibernatePropertiesCustomizers)));
 		return vendorProperties;
 	}
 

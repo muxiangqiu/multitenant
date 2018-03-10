@@ -13,9 +13,9 @@ import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.listener.DataSourceCreateListener;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.autoconfigure.jdbc.EmbeddedDatabaseConnection;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
@@ -63,7 +63,7 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 				if (EmbeddedDatabaseConnection.isEmbedded(dataSourceInfo.getDriverClassName())) {
 					master = properties.getName();
 				}
-				DataSourceBuilder factory = this.properties.initializeDataSourceBuilder();
+				DataSourceBuilder<?> factory = this.properties.initializeDataSourceBuilder();
 				factory.url(dataSourceInfo.getUrl().replace(databaseNameService.getDatabaseName(master), databaseNameService.getDatabaseName(organization.getId())))
 					.username(dataSourceInfo.getUsername())
 					.password(dataSourceInfo.getPassword());
@@ -90,7 +90,7 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 	}
 	
 	
-	private void publishEvent(Organization organization, DataSourceInfo dataSourceInfo, DataSourceBuilder dataSourceBuilder) {
+	private void publishEvent(Organization organization, DataSourceInfo dataSourceInfo, DataSourceBuilder<?> dataSourceBuilder) {
 		if (listeners != null) {
 			for (DataSourceCreateListener dataSourceCreateListener : listeners) {
 				dataSourceCreateListener.onCreate(organization, dataSourceInfo, dataSourceBuilder);

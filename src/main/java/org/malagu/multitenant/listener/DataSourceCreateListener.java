@@ -2,7 +2,7 @@ package org.malagu.multitenant.listener;
 
 import org.malagu.multitenant.domain.DataSourceInfo;
 import org.malagu.multitenant.domain.Organization;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 
 
 /**
@@ -11,5 +11,5 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
  */
 public interface DataSourceCreateListener {
 
-	void onCreate(Organization organization, DataSourceInfo dataSourceInfo, DataSourceBuilder dataSourceBuilder);
+	void onCreate(Organization organization, DataSourceInfo dataSourceInfo, DataSourceBuilder<?> dataSourceBuilder);
 }
