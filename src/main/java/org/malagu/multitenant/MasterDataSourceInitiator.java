@@ -3,6 +3,7 @@ package org.malagu.multitenant;
 import org.malagu.linq.JpaUtil;
 import org.malagu.linq.initiator.JpaUtilAble;
 import org.malagu.multitenant.domain.DataSourceInfo;
+import org.malagu.multitenant.service.DatabaseNameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.ApplicationContext;
@@ -20,16 +21,20 @@ public class MasterDataSourceInitiator implements JpaUtilAble {
 	@Autowired
 	private DataSourceProperties properties;
 	
+	@Autowired
+	private DatabaseNameService databaseNameService;
+	
 	@Override
 	@Transactional
 	public void afterPropertiesSet(ApplicationContext applicationContext) {
 		boolean isExist = true;
-		DataSourceInfo dataSourceInfo = JpaUtil.getOne(DataSourceInfo.class, Constants.MASTER);
+		String master = databaseNameService.getDatabaseName(Constants.MASTER);
+		DataSourceInfo dataSourceInfo = JpaUtil.getOne(DataSourceInfo.class, master);
 		if (dataSourceInfo == null) {
 			dataSourceInfo = new DataSourceInfo();
 			isExist = false;
 		}
-		dataSourceInfo.setId(Constants.MASTER);
+		dataSourceInfo.setId(master);
 		dataSourceInfo.setDriverClassName(properties.determineDriverClassName());
 		dataSourceInfo.setEnabled(true);
 		dataSourceInfo.setJndiName(properties.getJndiName());

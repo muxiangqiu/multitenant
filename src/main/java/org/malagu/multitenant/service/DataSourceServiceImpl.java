@@ -61,7 +61,7 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 			if (StringUtils.isEmpty(dataSourceInfo.getJndiName())) {
 				String master = Constants.MASTER;
 				if (EmbeddedDatabaseConnection.isEmbedded(dataSourceInfo.getDriverClassName())) {
-					master = properties.getName();
+					master = properties.determineDatabaseName();
 				}
 				DataSourceBuilder<?> factory = this.properties.initializeDataSourceBuilder();
 				factory.url(dataSourceInfo.getUrl().replace(databaseNameService.getDatabaseName(master), databaseNameService.getDatabaseName(organization.getId())))

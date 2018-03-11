@@ -1,5 +1,6 @@
 package org.malagu.multitenant.service;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategy;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.malagu.multitenant.Constants;
+import org.malagu.multitenant.HibernateDefaultDdlAutoProvider;
 import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.listener.EntityManagerFactoryCreateListener;
 import org.springframework.beans.BeansException;
@@ -21,12 +23,13 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateSettings;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
+import org.springframework.boot.jdbc.SchemaManagementProvider;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder.Builder;
 import org.springframework.boot.orm.jpa.hibernate.SpringJtaPlatform;
@@ -81,20 +84,19 @@ public class EntityManagerFactoryServiceImpl implements
 
 	private String beanName;
 	
-	@Autowired
-	private PhysicalNamingStrategy physicalNamingStrategy;
+	private final HibernateDefaultDdlAutoProvider defaultDdlAutoProvider;
+	
+	private final PhysicalNamingStrategy physicalNamingStrategy;
 
-	@Autowired
-	private ImplicitNamingStrategy implicitNamingStrategy;
+	private final ImplicitNamingStrategy implicitNamingStrategy;
 
-	@Autowired
-	private List<HibernatePropertiesCustomizer> hibernatePropertiesCustomizers;
+	private final List<HibernatePropertiesCustomizer> hibernatePropertiesCustomizers;
 	
 	@Autowired(required = false)
 	private List<EntityManagerFactoryCreateListener> listeners;
 	
 	private static final Log logger = LogFactory
-			.getLog(HibernateJpaAutoConfiguration.class);
+			.getLog(EntityManagerFactoryServiceImpl.class);
 
 	private static final String JTA_PLATFORM = "hibernate.transaction.jta.platform";
 
@@ -133,6 +135,20 @@ public class EntityManagerFactoryServiceImpl implements
 	@Value("${bdf3.multitenant.customPackagesToScan:}")
 	private String customPackagesToScan;
 	
+	
+	public EntityManagerFactoryServiceImpl(
+			ObjectProvider<List<SchemaManagementProvider>> providers,
+			ObjectProvider<PhysicalNamingStrategy> physicalNamingStrategy,
+			ObjectProvider<ImplicitNamingStrategy> implicitNamingStrategy,
+			ObjectProvider<List<HibernatePropertiesCustomizer>> hibernatePropertiesCustomizers) {
+		this.defaultDdlAutoProvider = new HibernateDefaultDdlAutoProvider(
+				providers.getIfAvailable(Collections::emptyList));
+		this.physicalNamingStrategy = physicalNamingStrategy.getIfAvailable();
+		this.implicitNamingStrategy = implicitNamingStrategy.getIfAvailable();
+		this.hibernatePropertiesCustomizers = hibernatePropertiesCustomizers
+				.getIfAvailable(() -> Collections.emptyList());
+	}
+	
 	protected AbstractJpaVendorAdapter createJpaVendorAdapter() {
 		return new HibernateJpaVendorAdapter();
 	}
@@ -149,17 +165,17 @@ public class EntityManagerFactoryServiceImpl implements
 		return packages;
 	}
 	
-	public JpaVendorAdapter getJpaVendorAdapter() {
+	public JpaVendorAdapter getJpaVendorAdapter(DataSource dataSource) {
 		AbstractJpaVendorAdapter adapter = createJpaVendorAdapter();
-		adapter.setShowSql(properties.isShowSql());
-		adapter.setDatabase(properties.getDatabase());
-		adapter.setDatabasePlatform(properties.getDatabasePlatform());
-		adapter.setGenerateDdl(properties.isGenerateDdl());
+		adapter.setShowSql(this.properties.isShowSql());
+		adapter.setDatabase(this.properties.determineDatabase(dataSource));
+		adapter.setDatabasePlatform(this.properties.getDatabasePlatform());
+		adapter.setGenerateDdl(this.properties.isGenerateDdl());
 		return adapter;
 	}
 
-	public EntityManagerFactoryBuilder getEntityManagerFactoryBuilder() {
-		JpaVendorAdapter jpaVendorAdapter = getJpaVendorAdapter();
+	public EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(DataSource dataSource) {
+		JpaVendorAdapter jpaVendorAdapter = getJpaVendorAdapter(dataSource);
 		EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
 				jpaVendorAdapter, properties.getProperties(),
 				this.persistenceUnitManager);
@@ -176,7 +192,7 @@ public class EntityManagerFactoryServiceImpl implements
 		DataSource dataSource = dataSourceService.getOrCreateDataSource(organization);
 		Map<String, Object> vendorProperties = getVendorProperties(dataSource);
 		customizeVendorProperties(vendorProperties);
-		LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = getEntityManagerFactoryBuilder().dataSource(dataSource).packages(mergePackagesToScan())
+		LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = getEntityManagerFactoryBuilder(dataSource).dataSource(dataSource).packages(mergePackagesToScan())
 				.properties(vendorProperties).jta(isJta()).build();
 		entityManagerFactoryBean.setBeanClassLoader(classLoader);
 		entityManagerFactoryBean.setBeanFactory(beanFactory);
@@ -190,8 +206,10 @@ public class EntityManagerFactoryServiceImpl implements
 	}
 	
 	protected Map<String, Object> getVendorProperties(DataSource dataSource) {
+		String defaultDdlMode = this.defaultDdlAutoProvider
+				.getDefaultDdlAuto(dataSource);
 		Map<String, Object> vendorProperties = new LinkedHashMap<String, Object>();
-		vendorProperties.putAll(this.properties.getHibernateProperties(new HibernateSettings()
+		vendorProperties.putAll(this.properties.getHibernateProperties(new HibernateSettings().ddlAuto(defaultDdlMode)
 				.implicitNamingStrategy(this.implicitNamingStrategy)
 				.physicalNamingStrategy(this.physicalNamingStrategy)
 				.hibernatePropertiesCustomizers(
@@ -332,7 +350,7 @@ public class EntityManagerFactoryServiceImpl implements
 		if (dataSource != null) {
 			Map<String, Object> vendorProperties = getVendorProperties(dataSource);
 			customizeVendorProperties(vendorProperties);
-			Builder builder = getEntityManagerFactoryBuilder().dataSource(dataSource).packages(packagesToScan.split(","))
+			Builder builder = getEntityManagerFactoryBuilder(dataSource).dataSource(dataSource).packages(packagesToScan.split(","))
 					.properties(vendorProperties).jta(isJta());
 			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = builder.build();
 
@@ -356,7 +374,7 @@ public class EntityManagerFactoryServiceImpl implements
 		if (dataSource != null) {
 			Map<String, Object> vendorProperties = getVendorProperties(dataSource);
 			customizeVendorProperties(vendorProperties);
-		    Builder builder = getEntityManagerFactoryBuilder().dataSource(dataSource).packages(mergePackagesToScan())
+		    Builder builder = getEntityManagerFactoryBuilder(dataSource).dataSource(dataSource).packages(mergePackagesToScan())
 					.properties(vendorProperties).jta(isJta());
 			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = builder.build();
 			entityManagerFactoryBean.setBeanClassLoader(classLoader);
