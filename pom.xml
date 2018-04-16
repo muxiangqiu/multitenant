@@ -6,7 +6,7 @@
 
     <groupId>org.malagu.multitenant</groupId>
     <artifactId>multitenant</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.1.RELEASE</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>multitenant</description>
     <url>https://github.com/muxiangqiu/multitenant</url>
