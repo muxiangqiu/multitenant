@@ -11,11 +11,15 @@ import org.malagu.multitenant.MultitenantUtils;
 import org.malagu.multitenant.domain.DataSourceInfo;
 import org.malagu.multitenant.domain.Organization;
 import org.malagu.multitenant.listener.DataSourceCreateListener;
+import org.malagu.multitenant.listener.OrgDataSourceCreateEvent;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
@@ -28,7 +32,7 @@ import org.springframework.util.StringUtils;
  * @since 2017年11月24日
  */
 @Service
-public class DataSourceServiceImpl implements DataSourceService, InitializingBean {
+public class DataSourceServiceImpl implements DataSourceService, InitializingBean, ApplicationContextAware {
 	
 	@Autowired
 	private DataSource dataSource;
@@ -46,6 +50,8 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 	
 	@Autowired
 	private DatabaseNameService databaseNameService;
+	
+	private ApplicationContext applicationContext;
 	
 	@Override
 	public DataSource getDataSource(Organization organization) {
@@ -84,6 +90,7 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 				dataSouce = dataSourceLookup.getDataSource(dataSourceInfo.getJndiName());
 			}
 			dataSourceMap.put(organization.getId(), dataSouce);
+			this.applicationContext.publishEvent(new OrgDataSourceCreateEvent(dataSouce));
 			return dataSouce;
 		});
 
@@ -150,6 +157,12 @@ public class DataSourceServiceImpl implements DataSourceService, InitializingBea
 	@Override
 	public void clearDataSource() {
 		dataSourceMap.clear();
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+		
 	}
 	
 	
