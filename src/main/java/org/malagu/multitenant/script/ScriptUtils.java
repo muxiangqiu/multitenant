@@ -9,12 +9,14 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.EncodedResource;
+import org.springframework.expression.common.TemplateParserContext;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.jdbc.datasource.init.CannotReadScriptException;
 import org.springframework.jdbc.datasource.init.ScriptException;
 import org.springframework.jdbc.datasource.init.ScriptParseException;
@@ -488,9 +490,10 @@ public abstract class ScriptUtils {
 	private static String parseStatement(String statement, Map<String, Object> vars) {
 		String result = statement;
 		if (result != null && vars != null) {
-			for (Entry<String, Object> entry : vars.entrySet()) {
-				result = result.replaceAll("\\$\\{"+ entry.getKey() +"\\}", entry.getValue() != null ? entry.getValue().toString() : "");
-			}
+			SpelExpressionParser parser = new SpelExpressionParser();
+			StandardEvaluationContext context = new StandardEvaluationContext();
+			context.setVariables(vars);
+			return parser.parseExpression(result, new TemplateParserContext("${", "}")).getValue(context, String.class);
 		}
 		return result;
 	}

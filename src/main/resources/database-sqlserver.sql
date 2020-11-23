@@ -1,1 +1,1 @@
-CREATE database ${databaseName};
+CREATE database ${#databaseName};
